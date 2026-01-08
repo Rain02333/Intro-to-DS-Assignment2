@@ -1,0 +1,37 @@
+x-base-img: &base-img
+  image: cpitsch/spark-base-img:latest
+
+services:
+  spark-master:
+    <<: *base-img
+    container_name: spark-master
+    user: root
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - '7075:7075'
+      - '7077:7077'
+      - '15002:15002'
+      - '18888:18888'
+      - '4040:4040'
+    volumes:
+      - ./big-data:/mounted-data/data
+      - ./Q5_big_data.ipynb:/mounted-data/Q5_big_data.ipynb
+  spark-worker:
+    <<: *base-img
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=4
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
