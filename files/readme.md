@@ -186,83 +186,100 @@ mean_support_count = 21.588217568178393
 
 ## (a) Inductive Miner model analysis (based only on discovered model)
 ### a.1 Possible start activities
-- 
+- {'Create Fine'}
 
 ### a.2 Activities & order for traces with appeal to judge
-- 
+- 一定要包含的activities{
+  Create Fine, Insert Fine Notification, Send Fine, Payment, Add penalty,
+  Appeal to Judge, Send Appeal to Prefecture, Insert Date Appeal to Prefecture,
+  Receive Result Appeal from Prefecture, Notify Result Appeal to Offender,
+  Send for Credit Collection
+  }。
+- 一定会在之前发生的事件must_before_blocks = [{'Create Fine'}, {'Insert Fine Notification'}]
+- 一定会在这之后发生的事件must_after_blocks = [{'Send for Credit Collection'}]
 
 ### a.3 Activities that can occur more than once
-- 
+- ['Payment']
 
 ### a.4 Credit collection without sending via post possible?
-- 
+- 可能，其中有一条trace是 ('Create Fine',
+  'Notify Result Appeal to Offender',
+  'Send for Credit Collection'))
 
 ## (b) Count cases in log exhibiting behaviors allowed by model
 ### b.1 Payment made but still sent to credit collection (count)
-- 
+- 1013 cases
 
 ### b.2 Penalty before sending via post (count)
-- 
+- 0 cases
 
 ### b.3 Appeal after a payment (count)
-- 
+- 10 cases
 
 ### b.4 Notified about appeal result without any appeal (count)
-- 
+- 17 cases
 
 ## (c) Variant analysis
 ### c.1 Cumulative variant frequency chart
 **Figure:**
-- 
+- 见图
 
 ### c.2 Interpretation (2 sentences)
-- 
+- 前 2 个变体就覆盖约 68.44% 的 cases（0.375717 + 0.308688 ≈ 0.684405），说明流程在实际执行中高度集中，主要遵循少数几条主路径。
+之后曲线很快趋于平缓；尽管总共有大约 160 个变体，但新增变体对累计覆盖率的贡献很小，呈现明显的长尾分布。
 
 ### c.3 Five most frequent variants & #cases
-- 
+- 见表格
 
 ## (d) Case closure categories pie chart (include relative frequencies)
 **Figure:**
-- 
+- 见图
 
 **Counts / shares (optional table):**
-- 
+- still_open                  13766
+  closed_paid_full            28718
+  closed_dismissed              966
+  closed_credit_collection    28072
+- Share
+  still_open                  0.1925
+  closed_paid_full            0.4015
+  closed_dismissed            0.0135
+  closed_credit_collection    0.3925
 
 ## (e) Closed cases sublog (57756 cases) → top-5 closed-case variants → Petri net + comment (3–4 sentences)
-**Filtered variants (if needed):**
-- 
 
-**Discovered Petri net figure:**
-- 
 
 **Comment (activities, payment timing, payment vs credit collection):**
-- 
+- 与 Q2(a) 用全量日志发现的模型相比，Q2(e) 在 closed sublog 且只保留最常见 5 个变体后得到的模型明显更简洁，只包含主干活动（Create Fine、Send Fine、Insert Fine Notification、Add penalty、Payment、Send for Credit Collection），上诉等长尾活动不再出现。
+  从这 5 个变体看，Payment 的时机更“结构化”：要么直接在 Create Fine → Payment（22053 个 case），要么在 … → Add penalty → Payment 之后，甚至存在重复支付 Payment → Payment（1683 个 case）。
+  另外，催收在主流 closed 行为中表现为一种与支付互斥的结局：… → Send for Credit Collection 的变体不包含 Payment，而所有包含 Payment 的变体都不包含 Send for Credit Collection。
 
 ## (f) Conformance: token-based replay fitness of full log on filtered-log model
-- Perfectly fitting traces (%):
-- Log fitness value:
+- Perfectly fitting traces (%):80.25782276781969
+- Log fitness value: 0.9708997543726612
 - Explanation why fitness >> perfect-trace-%:
-  - 
+  - 因为 perfectly fitting 是 0/1 的严格判断：只要某条 trace 有一点偏差就不算完全拟合。
 
 ---
 
 # Q3: Natural Language Processing (20 pts)
 
 ## Data loading
-- Loaded files:
-- Final dataframe shape (expected ~ (1793, 5)):
-- Notes:
-  - 
+- Final dataframe shape (expected ~ (1793, 5)):1793：4  原本3列加一个lecture就是4列啊 为什么说expected是5啊 没懂。
+
+  
 
 ## (a) 25 most frequent words (no preprocessing) + 2 problems & fixes
 **Histogram figure:**
-- 
+- 见图
 
 **Problem 1 + fix:**
-- 
+- 高频词汇全是停用词信息量低无法反应课程内容。 
+- 去停用词（stopwords），必要时再做词形归一（lemma/stem）。
 
 **Problem 2 + fix:**
-- 
+- 仅使用空格分割导致and  And   say,  这种被分成单独的token导致同义词多token的情况。
+- 统一小写 + 去标点/用更规范 tokenizer。
 
 ## (b) Preprocess: lowercase + remove punctuation + nltk punkt_tab tokenize + stopword removal
 - Function signature / description:
