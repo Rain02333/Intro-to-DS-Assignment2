@@ -282,19 +282,17 @@ mean_support_count = 21.588217568178393
 - 统一小写 + 去标点/用更规范 tokenizer。
 
 ## (b) Preprocess: lowercase + remove punctuation + nltk punkt_tab tokenize + stopword removal
-- Function signature / description:
-  - 
 
 **Histogram (25 most frequent tokens in 01-introduction, no stopwords):**
-- 
+- 见图
 
 ## (c) Stacked histogram for tokens by lecture
 Tokens: `data, decision, predict, derivative, network, easy, database`  
 **Figure:**
--
+-见图
 
 **Observation (2–3 sentences):**
-- 
+- data 在几乎所有 lecture 中都大量出现（堆叠柱远高于其他 token），说明它是整门课跨主题的通用高频词。database 几乎只出现在 10-frequent-itemsets，decision 主要集中在 03-decision-trees。
 
 ## (d) n-gram language model generation
 - Implementation notes (n-grams, padding <s>, </s>, ConditionalFreqDist, random.choices seed=32133, lexicographic sorting):
@@ -302,19 +300,21 @@ Tokens: `data, decision, predict, derivative, network, easy, database`
 
 **Generated text for seed “introduction to data” (max 30 generated tokens):**
 - n=3:
-  - 
+  - introduction to data science machine learning or the other ones so this is perfectly fitting so my error is minimized there so the one that looks like this now the node that is
 - n=4:
-  - 
+  - introduction to data science so this lecture will be a group assignment while you are taking this course that you understand there is precisely one that has all kinds of other things that
 - n=5:
-  - 
+  - introduction to data
 - n=24:
-  - 
+  - introduction to data
 
 **Differences commentary:**
-- 
+- n=3、n=4 都能生成满 30 个新 token（总长 33），因为上下文只有 2/3 个词，数据里更容易找到匹配的 n-gram，所以模型不容易“卡死”。但也因此约束弱，生成内容会更容易跑题/跳跃。
+- n=5 和 n=16 都只输出 seed，说明模型在第一步就停止了。
 
 **Expected behavior for n > 5 & why:**
-- 
+- 你的结果已经展示了趋势：n 越大越容易提前停止，甚至完全不生成新词。原因是 数据稀疏（sparsity）：n−1 长的上下文组合数量爆炸，但训练语料有限，绝大多数长上下文在 ConditionalFreqDist 里都不存在；
+- 一旦遇到没见过的 context，按题目规则就必须停止生成。
 
 ## (e) Hierarchical TF-IDF timestamp retrieval (k=2, m=2)
 - Preprocessing pipeline (tokenize + stopwords + stemming):
@@ -324,31 +324,19 @@ Tokens: `data, decision, predict, derivative, network, easy, database`
 
 ### Query 1: “gradient descent approach”
 **Top-k lectures + scores + top-m timestamps:**
-- Lecture 1:
-    - Score:
-    - Timestamps:
-    - Matching text (brief excerpt):
-- Lecture 2:
-    - Score:
-    - Timestamps:
-    - Matching text (brief excerpt):
+- 匹配结果见输出
 
 **Comment (1–2 sentences):**
-- 
+- Top-2 lectures 为 04-regression 和 06-neural-networks-1，总体合理：梯度下降既用于回归的损失优化，也用于神经网络训练。
+- 06 的片段直接包含 “update the weights / gradient descent”，语义匹配更强；04 的片段更偏泛化的模型/误差表述。
 
 ### Query 2: “beer and diapers”
 **Top-k lectures + scores + top-m timestamps:**
-- Lecture 1:
-    - Score:
-    - Timestamps:
-    - Matching text (brief excerpt):
-- Lecture 2:
-    - Score:
-    - Timestamps:
-    - Matching text (brief excerpt):
+- 结果见输出
 
 **Comment (1–2 sentences):**
-- 
+- Top-1 lecture 是 10-frequent-itemsets，并在片段中直接出现 “buy diapers and beer”，与频繁项集/关联规则经典案例完全一致。
+- 第二名 01-introduction 也合理，因为导论部分提到 pattern mining 并举了类似购买模式的例子。
 
 ---
 
@@ -357,83 +345,87 @@ Tokens: `data, decision, predict, derivative, network, easy, database`
 ## (a) Exploration
 ### a.i Load air_traffic.csv
 1) Time range covered:
--
+-2003-01-01 to 2023-09-01
 2) # months tracked:
--
+-249
 3) Overall # flights:
--
+-192100234
 
 ### a.ii Time series plot: overall flights per month + description
 **Figure:**
-- 
+- 见图
 
 **Description:**
-- 
+- 2005到2020逐步下降 2020剧烈下降 后逐步回升
 
 ### a.iii Plot passengers vs flights (time series) + compare trends
 **Figure:**
-- 
+- 见图
 
 **Comparison:**
-- 
+- 两条时间序列整体呈现高度同步：在大多数时期的上升/下降趋势以及每年重复出现的峰谷位置基本一致，说明乘客量与航班量具有明显的正相关关系和共同的季节性。
 
 ## (b) In-depth analysis
 ### b.i Yearly seasonal plots (flights & passengers) + description (2–3 sentences)
 **Figures:**
-- 
+- 见图
 
 **Description & consistency notes:**
-- 
+- Flights和 Passengers都表现出稳定的 年度季节性，两个序列的季节形状高度一致，说明客流需求的季节变化会同步反映到航班量上。
+图中存在一个明显的异常年份2020.
 
 ### b.ii Correlation coefficient passengers vs flights + interpretation
-- Correlation:
-- Interpretation:
+- Correlation:0.5698387345242093
+- Interpretation:相关系数为 0.570，表明两者存在中等强度的正相关。
 - Relation to a.iii:
-  - 
+  - a.iii中pax和fit趋势大体相同，但同时两者并非完全线性绑定：同一时期乘客量还会受到航线等其他因素影响，因此出现“同步但幅度不同”的现象。
 
 ### b.iii Correlograms for differencing {0,1,2}, lags up to 24 + description + most significant lags
 **Figures:**
-- 
+- 见图
 
 **Description:**
 - 
 
 **Most significant lags (excluding 0) across all correlograms:**
-- 
+- 12和14 说明存在明显的年度季节性模式。
 
 ### b.iv STL decomposition (period=12) + stationary residual?
 **Figure (trend/seasonal/resid):**
-- 
+- 如图
 
 **Residual stationary?**
-- 
+- yes
 
 ## (c) Forecasting (flights_train/test)
 ### c.i Suitability for forecasting (2–3 sentences)
-- 
+- 这两个序列都表现出明显的长期趋势和稳定的年度季节性，因此总体上适合用时间序列模型进行预测。
+- 但在 2020 年有异常断点,这会降低简单模型在该区间附近的预测可靠性。
 
 ### c.ii NaiveForecaster(mean) vs ARIMA (sktime) — find better ARIMA across RMSE/MAE/MAPE
 - Naive metrics:
-    - RMSE:
-    - MAE:
-    - MAPE:
+    - RMSE:51192.09540780126
+    - MAE:36663.857638888876
+    - MAPE:0.049011246090680395
 - Best ARIMA order (p,d,q):
-  - 
+  - Best ARIMA order (p,d,q): (12, 0, 9)
 - ARIMA metrics:
-    - RMSE:
-    - MAE:
-    - MAPE:
+    - RMSE:13627.400084195984
+    - MAE:10423.531177787236
+    - MAPE:0.013455019260433196
 - Notes:
-  - 
+  - 所选 ARIMA(12,0,9) 在三个评价指标上均显著优于 naive(mean)
 
 ### c.iii Plot train/test + forecast + comment
 **Figure:**
-- 
+- 如图
 
 **Is forecast good? Why/why not:**
-- 
+- Naive(mean) 基本是水平线，无法反映测试期的波动。
 
----
+ARIMA(12,0,9) 能跟随测试集的起伏，整体更贴近真实值，因此预测效果更好
+
+
 
 # Q5: Distributed Data Processing (17 pts)
 
