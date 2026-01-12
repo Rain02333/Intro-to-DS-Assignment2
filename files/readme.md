@@ -431,41 +431,83 @@ ARIMA(12,0,9) 能跟随测试集的起伏，整体更贴近真实值，因此预
 
 ## (a) MapReduce DFG computation: map/reduce signatures + explanation
 - Domains used (S, N0, C, A, T):
-  - 
+  - S: set of strings (text lines, identifiers)
+  - N0: set of non-negative integers (line numbers, counts)
+  - C ⊆ S: case identifiers (CaseID)
+  - A ⊆ S: activity labels (Activity)
+  - T ⊆ N0: timestamps (Timestamp)
+  - Notation: X* means “a list/multiset of elements from X”.
 
 **Map function signature(s):**
-- 
+- First Map (parse each row, emit events grouped by case):
+  - m1: (N0 × S) → (C × (T × A))*
+  - Meaning: input is (lineNumber, lineString), output is a list of pairs (caseID, (timestamp, activity)).
+- Second Map (optional identity map between the two jobs):
+  - m2: ((A × A) × N0) → ((A × A) × N0)*
+  - Meaning: pass through edge-count pairs unchanged.
 
 **Reduce function signature(s):**
-- 
+- First Reduce (within each case: sort by time, create directly-follows edges):
+  - r1: (C × (T × A)*) → (((A × A) × N0))*
+  - Meaning: input is (caseID, list of (timestamp, activity)), output is a list of ((a,b), 1) for all adjacent activities after sorting by timestamp.
+- Second Reduce (global counting of edges):
+  - r2: ((A × A) × N0*) → ((A × A) × N0)*
+  - Meaning: input is ((a,b), list of counts), output is ((a,b), sum(counts)).
 
 **High-level explanation:**
-- 
+- Goal: build a Directly-Follows Graph (DFG) where an edge (a,b) counts how often activity a is immediately followed by b in a case trace.
+- Job 1:
+  - Map 1 parses each CSV line into (CaseID, (Timestamp, Activity)).
+  - Reduce 1 groups all events by CaseID, sorts them by Timestamp, then emits one record ((ai, ai+1), 1) for each adjacent pair in the ordered trace.
+- Job 2:
+  - Map 2 can be identity (or omitted in Spark-style pipelines).
+  - Reduce 2 groups by edge key (a,b) and sums the 1s to obtain the final DFG edge weights.
 
 ## (b) Spark DFG discovery: RDD transformations used + explanation + DFG figure
-**Transformations list + what each does:**
-- 
+### Transformations
+使用 `textFile → map(解析为(case,(ts,act))) → groupByKey(按case聚合) → mapValues(按时间排序得到活动序列) → flatMap(生成相邻活动对边) → reduceByKey(对边计数求和)` 得到 DFG 的每条边 `(a,b)` 及其频次。
+
+### 结果解释（对应你的输出）
+- `num edges = 75`：最终 DFG 中共有 75 条不同的 directly-follows 边（不同的 `(a,b)`）。
+- `sample`：展示了频次最高的边及其权重，例如 `Create Fine → Send Fine` 出现 99811 次等。
+
+### DFG figure（Top-80）
+为保证可读性，只绘制频次最高的 **Top-80** 条边，并在边上标注频次作为权重。
+
 
 **DFG figure:**
-- 
+- 如图
 
 ## (c) Remove arcs with frequency < 100
 ### c.1 Update MapReduce solution (brief)
-- 
+- 不需要新增 MapReduce 作业：保持前两轮 MapReduce 不变（第 1 轮在 case 内排序生成相邻边并输出 `((a,b),1)`；第 2 轮对同一条边求和得到 `((a,b),count)`）。
+- 只需在 **第二轮 Reduce 的输出阶段**增加过滤条件：计算出 `count = sum(values)` 后，**仅当 `count >= 100` 才输出该边**；否则丢弃（不写入输出）。
+
 
 ### c.2 Update Spark implementation: new/changed transformations + explanation
-- 
+- dfg_filtered = dfg_counts.filter(lambda kv: kv[1] >= 100)
+- 在 `reduceByKey` 得到 `((a,b),count)` 之后删除所有频次 `< 100` 的边，仅保留 `count >= 100` 的 arcs 用于后续绘图。
 
 ### c.3 DFG after filtering figure
 **Figure:**
-- 
+- 如图
 
 ## (d) Most common resource per activity (Spark)
 **Transformations used + explanation:**
-- 
+- 使用 `textFile → map(解析出(activity,resource)) → map((activity,resource)→1) → reduceByKey(统计每个(activity,resource)频次) → map(重组为activity维度) → reduceByKey(选最大频次resource，平手按字典序) → sortBy → collect` 得到每个 activity 最常见的 resource。
 
 **Result table (Activity → most common resource):**
-- 
+- ([('A1', ('1153692000.0', 'Create Fine'), 1),
+  ('A100', ('1154469600.0', 'Create Fine'), 1),
+  ('A10000', ('1173394800.0', 'Create Fine'), 1),
+  ('A10001', ('1174258800.0', 'Create Fine'), 1),
+  ('A10004', ('1174345200.0', 'Create Fine'), 1),
+  ('A10005', ('1174345200.0', 'Create Fine'), 1),
+  ('A10007', ('1174345200.0', 'Create Fine'), 1),
+  ('A10008', ('1174345200.0', 'Create Fine'), 1),
+  ('A10009', ('1174345200.0', 'Create Fine'), 1),
+  ('A1001', ('1154469600.0', 'Create Fine'), 1)],
+150370)
 
 ---
 
